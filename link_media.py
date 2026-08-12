@@ -84,11 +84,25 @@ def build_movie_dest(f: Path, info: dict, root: Path = MOVIES_ROOT):
     return root / name / f"{name}{f.suffix.lower()}"
 
 
-def link_file(src: Path, dest: Path):
+def quality_suffix(info: dict) -> str:
+    return str(info.get("screen_size") or info.get("source") or "")
+
+
+def link_file(src: Path, dest: Path, info: dict | None = None):
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists():
-        logging.warning("Destination already exists, skipping: %s", dest)
-        return
+        if dest.samefile(src):
+            logging.info("Already linked, skipping: %s", dest)
+            return
+        suffix = quality_suffix(info or {})
+        if suffix:
+            dest = dest.with_name(f"{dest.stem} - {suffix}{dest.suffix}")
+        if dest.exists():
+            if dest.samefile(src):
+                logging.info("Already linked, skipping: %s", dest)
+                return
+            logging.warning("Destination already exists, skipping: %s", dest)
+            return
     try:
         os.link(src, dest)
         logging.info("Hardlinked %s -> %s", src, dest)

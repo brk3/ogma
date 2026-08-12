@@ -17,6 +17,12 @@ Kubernetes probes.
 Everything is idempotent — `link_file()` skips destinations that already exist —
 so the startup scan safely catches up on anything missed while Ogma was down.
 
+Grabbing the same title in two qualities at once (e.g. a 1080p to start
+watching sooner, a 2160p in the background) doesn't drop one of them: on a
+real collision `link_file()` tags the second file with its resolution or
+source (`Movie (2019) - 2160p.mkv`), and Plex treats same-folder files like
+that as multiple versions of the one title.
+
 ## Configuration
 
 | Env var | Default | Meaning |

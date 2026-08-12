@@ -114,6 +114,52 @@ class TestLinkFile:
 
         assert dest.read_bytes() == b"existing"
 
+    def test_reprocessing_already_linked_file_is_a_noop(self, tmp_path):
+        src = tmp_path / "src.mkv"
+        src.write_bytes(b"data")
+        dest = tmp_path / "dest.mkv"
+        lm.link_file(src, dest)
+
+        lm.link_file(src, dest, info={"screen_size": "2160p"})
+
+        assert sorted(tmp_path.glob("*.mkv")) == [dest, src]
+
+    def test_disambiguates_with_quality_tag_on_collision(self, tmp_path):
+        src = tmp_path / "src.mkv"
+        src.write_bytes(b"new")
+        dest = tmp_path / "dest.mkv"
+        dest.write_bytes(b"existing")
+
+        lm.link_file(src, dest, info={"screen_size": "2160p"})
+
+        assert dest.read_bytes() == b"existing"
+        alt = tmp_path / "dest - 2160p.mkv"
+        assert alt.stat().st_ino == src.stat().st_ino
+
+    def test_falls_back_to_source_tag_when_no_screen_size(self, tmp_path):
+        src = tmp_path / "src.mkv"
+        src.write_bytes(b"new")
+        dest = tmp_path / "dest.mkv"
+        dest.write_bytes(b"existing")
+
+        lm.link_file(src, dest, info={"source": "BluRay"})
+
+        alt = tmp_path / "dest - BluRay.mkv"
+        assert alt.stat().st_ino == src.stat().st_ino
+
+    def test_skips_when_disambiguated_dest_also_collides(self, tmp_path):
+        src = tmp_path / "src.mkv"
+        src.write_bytes(b"new")
+        dest = tmp_path / "dest.mkv"
+        dest.write_bytes(b"existing")
+        alt = tmp_path / "dest - 2160p.mkv"
+        alt.write_bytes(b"also existing")
+
+        lm.link_file(src, dest, info={"screen_size": "2160p"})
+
+        assert dest.read_bytes() == b"existing"
+        assert alt.read_bytes() == b"also existing"
+
     def test_falls_back_to_copy_when_hardlink_fails(self, tmp_path, monkeypatch):
         src = tmp_path / "src.mkv"
         src.write_bytes(b"data")

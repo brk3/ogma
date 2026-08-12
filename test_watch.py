@@ -29,6 +29,21 @@ class TestProcessEntry:
     def test_nonexistent_path_is_a_noop(self, tmp_path):
         process_entry(tmp_path / "does-not-exist")
 
+    def test_same_movie_different_quality_both_linked(self, tmp_path):
+        movies_root = tmp_path / "movies"
+        entry_1080 = tmp_path / "downloads-1080p" / "Knives Out 2019 1080p BluRay HEVC x265 5.1 BONE.mkv"
+        entry_1080.parent.mkdir(parents=True)
+        entry_1080.write_bytes(b"1" * 10)
+        entry_2160 = tmp_path / "downloads-2160p" / "Knives Out 2019 2160p UHD BluRay HEVC x265 5.1 BONE.mkv"
+        entry_2160.parent.mkdir(parents=True)
+        entry_2160.write_bytes(b"2" * 10)
+
+        process_entry(entry_1080, movies_root=movies_root, min_size_mb=0)
+        process_entry(entry_2160, movies_root=movies_root, min_size_mb=0)
+
+        linked = {p.name for p in movies_root.rglob("*.mkv")}
+        assert linked == {"Knives Out (2019).mkv", "Knives Out (2019) - 2160p.mkv"}
+
 
 class TestFailureContainment:
     """A single bad entry must never take down the watcher thread."""

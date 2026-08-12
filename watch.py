@@ -61,7 +61,7 @@ def process_entry(
         if dest is None:
             logging.warning("Could not determine destination for %s (guessit: %s)", f, info)
             continue
-        link_file(f, dest)
+        link_file(f, dest, info)
 
 
 class CompletedDownloadHandler(FileSystemEventHandler):
