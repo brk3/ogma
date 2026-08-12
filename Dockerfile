@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY link_media.py health.py watch.py /app/
+COPY link_media.py health.py watch.py migrate_leaf_names.py /app/
 
 WORKDIR /app
 USER 1000:1000

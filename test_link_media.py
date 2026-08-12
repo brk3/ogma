@@ -31,18 +31,18 @@ class TestBuildTvDest:
     def test_single_episode(self):
         info = {"title": "Example Show", "season": 15, "episode": 8}
         dest = lm.build_tv_dest(Path("ep.mkv"), info, root=Path("/tv"))
-        assert dest == Path("/tv/Example Show/Season 15/Example Show - S15E08.mkv")
+        assert dest == Path("/tv/Example Show/Season 15/ep.mkv")
 
-    def test_multi_episode(self):
+    def test_multi_episode_folder_placement(self):
         info = {"title": "Show", "season": 1, "episode": [1, 2]}
-        dest = lm.build_tv_dest(Path("ep.mkv"), info, root=Path("/tv"))
-        assert dest.name == "Show - S01E01E02.mkv"
+        dest = lm.build_tv_dest(Path("Show.S01E01E02.mkv"), info, root=Path("/tv"))
+        assert dest == Path("/tv/Show/Season 01/Show.S01E01E02.mkv")
 
-    def test_includes_year_and_episode_title(self):
-        info = {"title": "Show", "year": 2020, "season": 1, "episode": 1, "episode_title": "Pilot"}
-        dest = lm.build_tv_dest(Path("ep.mkv"), info, root=Path("/tv"))
+    def test_includes_year_in_folder(self):
+        info = {"title": "Show", "year": 2020, "season": 1, "episode": 1}
+        dest = lm.build_tv_dest(Path("Show.S01E01.mkv"), info, root=Path("/tv"))
         assert dest.parent.parent.name == "Show (2020)"
-        assert dest.name == "Show - S01E01 - Pilot.mkv"
+        assert dest.name == "Show.S01E01.mkv"
 
     def test_missing_season_returns_none(self):
         info = {"title": "Show", "episode": 1}
@@ -57,12 +57,12 @@ class TestBuildMovieDest:
     def test_with_year(self):
         info = {"title": "Example Movie", "year": 2019}
         dest = lm.build_movie_dest(Path("movie.mkv"), info, root=Path("/movies"))
-        assert dest == Path("/movies/Example Movie (2019)/Example Movie (2019).mkv")
+        assert dest == Path("/movies/Example Movie (2019)/movie.mkv")
 
     def test_without_year(self):
         info = {"title": "Example Movie"}
         dest = lm.build_movie_dest(Path("movie.mkv"), info, root=Path("/movies"))
-        assert dest == Path("/movies/Example Movie/Example Movie.mkv")
+        assert dest == Path("/movies/Example Movie/movie.mkv")
 
     def test_missing_title_returns_none(self):
         assert lm.build_movie_dest(Path("movie.mkv"), {}, root=Path("/movies")) is None
@@ -178,13 +178,29 @@ class TestRealWorldFilenames:
     """Regression tests for common release-naming conventions."""
 
     def test_sonarr_style_episode(self):
-        info = guessit("Example.Show.S15E08.1080p.WEB.H264-GRP.mkv")
+        name = "Example.Show.S15E08.1080p.WEB.H264-GRP.mkv"
+        info = guessit(name)
         assert lm.guess_media_type(info, "") == "episode"
-        dest = lm.build_tv_dest(Path("x.mkv"), info, root=Path("/tv"))
-        assert dest == Path("/tv/Example Show/Season 15/Example Show - S15E08.mkv")
+        dest = lm.build_tv_dest(Path(name), info, root=Path("/tv"))
+        assert dest == Path(f"/tv/Example Show/Season 15/{name}")
 
     def test_radarr_style_movie(self):
-        info = guessit("Example Movie 2019 1080p BluRay HEVC x265 5.1 GRP.mkv")
+        name = "Example Movie 2019 1080p BluRay HEVC x265 5.1 GRP.mkv"
+        info = guessit(name)
         assert lm.guess_media_type(info, "") == "movie"
-        dest = lm.build_movie_dest(Path("x.mkv"), info, root=Path("/movies"))
-        assert dest == Path("/movies/Example Movie (2019)/Example Movie (2019).mkv")
+        dest = lm.build_movie_dest(Path(name), info, root=Path("/movies"))
+        assert dest == Path(f"/movies/Example Movie (2019)/{name}")
+
+    def test_two_quality_grabs_of_same_episode_keep_distinct_names(self):
+        """The 4k-vs-1080p collision suffix in link_file() is a fallback, not the
+        primary mechanism: distinct release names already avoid the collision."""
+        info_1080p = guessit("Example.Show.S15E08.1080p.WEB.H264-GRP.mkv")
+        info_2160p = guessit("Example.Show.S15E08.2160p.WEB.H264-GRP.mkv")
+        dest_1080p = lm.build_tv_dest(
+            Path("Example.Show.S15E08.1080p.WEB.H264-GRP.mkv"), info_1080p, root=Path("/tv")
+        )
+        dest_2160p = lm.build_tv_dest(
+            Path("Example.Show.S15E08.2160p.WEB.H264-GRP.mkv"), info_2160p, root=Path("/tv")
+        )
+        assert dest_1080p.parent == dest_2160p.parent
+        assert dest_1080p != dest_2160p

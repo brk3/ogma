@@ -65,14 +65,7 @@ def build_tv_dest(f: Path, info: dict, root: Path = TV_ROOT):
         return None
     year = info.get("year")
     show_dir = f"{sanitize(title)} ({year})" if year else sanitize(title)
-    episodes = episode if isinstance(episode, list) else [episode]
-    ep_str = "".join(f"E{e:02d}" for e in episodes)
-    episode_title = info.get("episode_title")
-    filename = f"{sanitize(title)} - S{season:02d}{ep_str}"
-    if episode_title:
-        filename += f" - {sanitize(episode_title)}"
-    filename += f.suffix.lower()
-    return root / show_dir / f"Season {season:02d}" / filename
+    return root / show_dir / f"Season {season:02d}" / sanitize(f.name)
 
 
 def build_movie_dest(f: Path, info: dict, root: Path = MOVIES_ROOT):
@@ -81,7 +74,7 @@ def build_movie_dest(f: Path, info: dict, root: Path = MOVIES_ROOT):
         return None
     year = info.get("year")
     name = f"{sanitize(title)} ({year})" if year else sanitize(title)
-    return root / name / f"{name}{f.suffix.lower()}"
+    return root / name / sanitize(f.name)
 
 
 def quality_suffix(info: dict) -> str:

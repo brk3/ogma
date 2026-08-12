@@ -4,6 +4,8 @@ from watch import CompletedDownloadHandler, process_entry, scan_existing
 
 class TestProcessEntry:
     def test_prefers_folder_title_over_lowercase_file_title(self, tmp_path):
+        """The folder-cased title still governs the show/season folder even though
+        the leaf filename is now preserved as-is, lowercase and all."""
         entry = tmp_path / "downloads" / "Example.Show.S15E08.1080p.WEB.H264-GRP"
         entry.mkdir(parents=True)
         video = entry / "example.show.s15e08.1080p.web.h264-grp.mkv"
@@ -13,7 +15,9 @@ class TestProcessEntry:
         process_entry(entry, tv_root=tv_root, min_size_mb=0)
 
         linked = list(tv_root.rglob("*.mkv"))
-        assert linked == [tv_root / "Example Show" / "Season 15" / "Example Show - S15E08.mkv"]
+        assert linked == [
+            tv_root / "Example Show" / "Season 15" / "example.show.s15e08.1080p.web.h264-grp.mkv"
+        ]
 
     def test_single_file_entry_uses_its_own_title(self, tmp_path):
         entry = tmp_path / "downloads" / "Example Movie 2019 1080p BluRay HEVC x265 5.1 GRP.mkv"
@@ -24,12 +28,16 @@ class TestProcessEntry:
         process_entry(entry, movies_root=movies_root, min_size_mb=0)
 
         linked = list(movies_root.rglob("*.mkv"))
-        assert linked == [movies_root / "Example Movie (2019)" / "Example Movie (2019).mkv"]
+        assert linked == [
+            movies_root / "Example Movie (2019)" / "Example Movie 2019 1080p BluRay HEVC x265 5.1 GRP.mkv"
+        ]
 
     def test_nonexistent_path_is_a_noop(self, tmp_path):
         process_entry(tmp_path / "does-not-exist")
 
     def test_same_movie_different_quality_both_linked(self, tmp_path):
+        """Distinct release names already keep these apart -- link_file()'s quality-tag
+        disambiguation is a fallback for same-named collisions, not the primary mechanism."""
         movies_root = tmp_path / "movies"
         entry_1080 = tmp_path / "downloads-1080p" / "Example Movie 2019 1080p BluRay HEVC x265 5.1 GRP.mkv"
         entry_1080.parent.mkdir(parents=True)
@@ -42,7 +50,10 @@ class TestProcessEntry:
         process_entry(entry_2160, movies_root=movies_root, min_size_mb=0)
 
         linked = {p.name for p in movies_root.rglob("*.mkv")}
-        assert linked == {"Example Movie (2019).mkv", "Example Movie (2019) - 2160p.mkv"}
+        assert linked == {
+            "Example Movie 2019 1080p BluRay HEVC x265 5.1 GRP.mkv",
+            "Example Movie 2019 2160p UHD BluRay HEVC x265 5.1 GRP.mkv",
+        }
 
 
 class TestFailureContainment:
