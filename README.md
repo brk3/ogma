@@ -45,16 +45,17 @@ make test
 
 ## Releasing
 
-Built locally and pushed to GHCR; there is no CI.
+Pushing a `vX.Y.Z` tag triggers `.github/workflows/release.yml`, which runs
+the tests and builds/pushes `ghcr.io/brk3/ogma:vX.Y.Z`.
 
 ```sh
 git tag v0.1.0
-make release
+git push origin v0.1.0
 ```
 
 Flux's ImagePolicy in [brk3/homelab](https://github.com/brk3/homelab) watches
 `ghcr.io/brk3/ogma` and commits the new tag into the deployment manifest.
 
-The image is always built `linux/amd64` (the homelab node is Intel) even when
-built from an arm64 Mac; `make build` fails loudly if the architecture comes
-out wrong.
+The image is always built `linux/amd64` (the homelab node is Intel). `make
+build` (local, not part of CI) is for testing a build on your own machine
+before tagging; it fails loudly if the architecture comes out wrong.
