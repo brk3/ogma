@@ -29,9 +29,9 @@ class TestGuessMediaType:
 
 class TestBuildTvDest:
     def test_single_episode(self):
-        info = {"title": "King of the Hill", "season": 15, "episode": 8}
+        info = {"title": "Example Show", "season": 15, "episode": 8}
         dest = lm.build_tv_dest(Path("ep.mkv"), info, root=Path("/tv"))
-        assert dest == Path("/tv/King of the Hill/Season 15/King of the Hill - S15E08.mkv")
+        assert dest == Path("/tv/Example Show/Season 15/Example Show - S15E08.mkv")
 
     def test_multi_episode(self):
         info = {"title": "Show", "season": 1, "episode": [1, 2]}
@@ -55,14 +55,14 @@ class TestBuildTvDest:
 
 class TestBuildMovieDest:
     def test_with_year(self):
-        info = {"title": "Knives Out", "year": 2019}
+        info = {"title": "Example Movie", "year": 2019}
         dest = lm.build_movie_dest(Path("movie.mkv"), info, root=Path("/movies"))
-        assert dest == Path("/movies/Knives Out (2019)/Knives Out (2019).mkv")
+        assert dest == Path("/movies/Example Movie (2019)/Example Movie (2019).mkv")
 
     def test_without_year(self):
-        info = {"title": "Knives Out"}
+        info = {"title": "Example Movie"}
         dest = lm.build_movie_dest(Path("movie.mkv"), info, root=Path("/movies"))
-        assert dest == Path("/movies/Knives Out/Knives Out.mkv")
+        assert dest == Path("/movies/Example Movie/Example Movie.mkv")
 
     def test_missing_title_returns_none(self):
         assert lm.build_movie_dest(Path("movie.mkv"), {}, root=Path("/movies")) is None
@@ -178,13 +178,13 @@ class TestRealWorldFilenames:
     """Regression tests for common release-naming conventions."""
 
     def test_sonarr_style_episode(self):
-        info = guessit("King.of.the.Hill.S15E08.1080p.WEB.H264-CAKES.mkv")
+        info = guessit("Example.Show.S15E08.1080p.WEB.H264-GRP.mkv")
         assert lm.guess_media_type(info, "") == "episode"
         dest = lm.build_tv_dest(Path("x.mkv"), info, root=Path("/tv"))
-        assert dest == Path("/tv/King of the Hill/Season 15/King of the Hill - S15E08.mkv")
+        assert dest == Path("/tv/Example Show/Season 15/Example Show - S15E08.mkv")
 
     def test_radarr_style_movie(self):
-        info = guessit("Knives Out 2019 1080p BluRay HEVC x265 5.1 BONE.mkv")
+        info = guessit("Example Movie 2019 1080p BluRay HEVC x265 5.1 GRP.mkv")
         assert lm.guess_media_type(info, "") == "movie"
         dest = lm.build_movie_dest(Path("x.mkv"), info, root=Path("/movies"))
-        assert dest == Path("/movies/Knives Out (2019)/Knives Out (2019).mkv")
+        assert dest == Path("/movies/Example Movie (2019)/Example Movie (2019).mkv")
