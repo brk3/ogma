@@ -44,6 +44,11 @@ class TestBuildTvDest:
         assert dest.parent.parent.name == "Show (2020)"
         assert dest.name == "Show.S01E01.mkv"
 
+    def test_year_list_uses_first_year(self):
+        info = {"title": "Show", "year": [1989, 1987], "season": 1, "episode": 1}
+        dest = lm.build_tv_dest(Path("Show.S01E01.mkv"), info, root=Path("/tv"))
+        assert dest.parent.parent.name == "Show (1989)"
+
     def test_missing_season_returns_none(self):
         info = {"title": "Show", "episode": 1}
         assert lm.build_tv_dest(Path("ep.mkv"), info, root=Path("/tv")) is None
@@ -58,6 +63,11 @@ class TestBuildMovieDest:
         info = {"title": "Example Movie", "year": 2019}
         dest = lm.build_movie_dest(Path("movie.mkv"), info, root=Path("/movies"))
         assert dest == Path("/movies/Example Movie (2019)/movie.mkv")
+
+    def test_year_list_uses_first_year(self):
+        info = {"title": "Example Movie", "year": [2020, 2018]}
+        dest = lm.build_movie_dest(Path("movie.mkv"), info, root=Path("/movies"))
+        assert dest.parent.name == "Example Movie (2020)"
 
     def test_without_year(self):
         info = {"title": "Example Movie"}
@@ -77,20 +87,14 @@ class TestIterVideoFiles:
         not_video = tmp_path / "Show.S01E01.nfo"
         not_video.write_bytes(b"0" * 10)
 
-        results = set(lm.iter_video_files(tmp_path, min_size_mb=0))
+        results = set(lm.iter_video_files(tmp_path))
 
         assert results == {episode}
-
-    def test_size_filter(self, tmp_path):
-        f = tmp_path / "Show.S01E01.mkv"
-        f.write_bytes(b"0" * 10)
-        assert list(lm.iter_video_files(tmp_path, min_size_mb=1)) == []
-        assert list(lm.iter_video_files(tmp_path, min_size_mb=0)) == [f]
 
     def test_single_file_input(self, tmp_path):
         f = tmp_path / "movie.mkv"
         f.write_bytes(b"0" * 10)
-        assert list(lm.iter_video_files(f, min_size_mb=0)) == [f]
+        assert list(lm.iter_video_files(f)) == [f]
 
 
 class TestLinkFile:

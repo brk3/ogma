@@ -55,6 +55,31 @@ class TestProcessEntry:
             "Example Movie 2019 2160p UHD BluRay HEVC x265 5.1 GRP.mkv",
         }
 
+    def test_small_episode_that_parses_is_still_linked(self, tmp_path):
+        """A 360p rip can be well under 50 MB; the size gate must not eat real
+        episodes just because they parse cleanly."""
+        entry = tmp_path / "downloads" / "Example.Show.S01E01.360p.WEB.H264-GRP"
+        entry.mkdir(parents=True)
+        video = entry / "example.show.s01e01.360p.web.h264-grp.mkv"
+        video.write_bytes(b"0" * 10)  # tiny, but names itself as a real episode
+        tv_root = tmp_path / "tv"
+
+        process_entry(entry, tv_root=tv_root, min_size_mb=50)
+
+        assert list(tv_root.rglob("*.mkv")) == [
+            tv_root / "Example Show" / "Season 01" / "example.show.s01e01.360p.web.h264-grp.mkv"
+        ]
+
+    def test_small_unparseable_file_is_still_skipped(self, tmp_path):
+        entry = tmp_path / "downloads" / "1080p.WEB-DL.x264-GRP.mkv"
+        entry.parent.mkdir(parents=True)
+        entry.write_bytes(b"0" * 10)
+        movies_root = tmp_path / "movies"
+
+        process_entry(entry, movies_root=movies_root, min_size_mb=1)
+
+        assert list(movies_root.rglob("*.mkv")) == []
+
 
 class TestFailureContainment:
     """A single bad entry must never take down the watcher thread."""

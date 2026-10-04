@@ -50,7 +50,7 @@ def process_entry(
     # Prefer the containing folder's title/year over the file's: release folder
     # names are almost always properly cased even when the file inside isn't.
     folder_info = guessit(path.name) if path.is_dir() else {}
-    for f in iter_video_files(path, min_size_mb=min_size_mb):
+    for f in iter_video_files(path):
         info = guessit(f.name)
         if folder_info.get("title"):
             info["title"] = folder_info["title"]
@@ -59,6 +59,10 @@ def process_entry(
         media_type = guess_media_type(info)
         dest = build_tv_dest(f, info, root=tv_root) if media_type == "episode" else build_movie_dest(f, info, root=movies_root)
         if dest is None:
+            # Only files that don't parse into a real episode/movie are gated on
+            # size, so low-bitrate (e.g. 360p) releases still get linked.
+            if f.stat().st_size < min_size_mb * 1024 * 1024:
+                continue
             logging.warning("Could not determine destination for %s (guessit: %s)", f, info)
             continue
         link_file(f, dest, info)

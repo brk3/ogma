@@ -36,14 +36,12 @@ def sanitize(name: str) -> str:
     return " ".join(name.split())
 
 
-def iter_video_files(content_path: Path, min_size_mb: int = MIN_VIDEO_SIZE_MB):
+def iter_video_files(content_path: Path):
     candidates = [content_path] if content_path.is_file() else sorted(content_path.rglob("*"))
     for f in candidates:
         if not f.is_file() or f.suffix.lower() not in VIDEO_EXTENSIONS:
             continue
         if "sample" in f.name.lower():
-            continue
-        if f.stat().st_size < min_size_mb * 1024 * 1024:
             continue
         yield f
 
@@ -57,13 +55,20 @@ def guess_media_type(info: dict, category: str = "") -> str:
     return info.get("type", "movie")
 
 
+def _single_year(year):
+    """guessit can return several year candidates as a list; keep the first."""
+    if isinstance(year, (list, tuple)):
+        return year[0] if year else None
+    return year
+
+
 def build_tv_dest(f: Path, info: dict, root: Path = TV_ROOT):
     title = info.get("title")
     season = info.get("season")
     episode = info.get("episode")
     if not title or season is None or episode is None:
         return None
-    year = info.get("year")
+    year = _single_year(info.get("year"))
     show_dir = f"{sanitize(title)} ({year})" if year else sanitize(title)
     return root / show_dir / f"Season {season:02d}" / sanitize(f.name)
 
@@ -72,7 +77,7 @@ def build_movie_dest(f: Path, info: dict, root: Path = MOVIES_ROOT):
     title = info.get("title")
     if not title:
         return None
-    year = info.get("year")
+    year = _single_year(info.get("year"))
     name = f"{sanitize(title)} ({year})" if year else sanitize(title)
     return root / name / sanitize(f.name)
 

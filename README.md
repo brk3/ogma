@@ -30,7 +30,7 @@ that as multiple versions of the one title.
 | `WATCH_DIR` | `/data/downloads/complete` | qBittorrent's completed folder |
 | `TV_ROOT` | `/data/tv` | Plex TV library |
 | `MOVIES_ROOT` | `/data/movies` | Plex Movies library |
-| `MIN_VIDEO_SIZE_MB` | `50` | Skip files smaller than this |
+| `MIN_VIDEO_SIZE_MB` | `50` | Skip files smaller than this that don't parse into an episode/movie |
 | `SETTLE_SECONDS` | `5` | Wait after an entry appears before linking |
 | `HEALTH_PORT` | `8080` | Port for `/healthz` and `/readyz` |
 | `LOG_FILE` | _(unset)_ | Also log to this file |
