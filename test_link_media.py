@@ -57,6 +57,25 @@ class TestBuildTvDest:
         info = {"season": 1, "episode": 1}
         assert lm.build_tv_dest(Path("ep.mkv"), info, root=Path("/tv")) is None
 
+    def test_reuses_existing_dir_that_differs_only_by_case(self, tmp_path):
+        """A single-file release parses to "example show" but "Example Show"
+        already exists; the existing directory wins so the show isn't split."""
+        (tmp_path / "Example Show").mkdir()
+        info = {"title": "example show", "season": 15, "episode": 8}
+
+        dest = lm.build_tv_dest(Path("example.show.s15e08.mkv"), info, root=tmp_path)
+
+        assert dest == tmp_path / "Example Show" / "Season 15" / "example.show.s15e08.mkv"
+
+    def test_nonexistent_root_uses_candidate_name(self, tmp_path):
+        info = {"title": "Brand New Show", "season": 1, "episode": 1}
+
+        dest = lm.build_tv_dest(
+            Path("ep.mkv"), info, root=tmp_path / "does-not-exist"
+        )
+
+        assert dest == tmp_path / "does-not-exist" / "Brand New Show" / "Season 01" / "ep.mkv"
+
 
 class TestBuildMovieDest:
     def test_with_year(self):
@@ -76,6 +95,23 @@ class TestBuildMovieDest:
 
     def test_missing_title_returns_none(self):
         assert lm.build_movie_dest(Path("movie.mkv"), {}, root=Path("/movies")) is None
+
+    def test_reuses_existing_dir_that_differs_only_by_case(self, tmp_path):
+        (tmp_path / "Example Movie (2019)").mkdir()
+        info = {"title": "example movie", "year": 2019}
+
+        dest = lm.build_movie_dest(Path("movie.mkv"), info, root=tmp_path)
+
+        assert dest == tmp_path / "Example Movie (2019)" / "movie.mkv"
+
+    def test_nonexistent_root_uses_candidate_name(self, tmp_path):
+        info = {"title": "Example Movie"}
+
+        dest = lm.build_movie_dest(
+            Path("movie.mkv"), info, root=tmp_path / "does-not-exist"
+        )
+
+        assert dest == tmp_path / "does-not-exist" / "Example Movie" / "movie.mkv"
 
 
 class TestIterVideoFiles:

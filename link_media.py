@@ -55,6 +55,23 @@ def guess_media_type(info: dict, category: str = "") -> str:
     return info.get("type", "movie")
 
 
+def existing_dir(root: Path, name: str) -> Path | None:
+    """Existing subdir of root matching `name` case-insensitively, else None.
+
+    A single-file release carries no folder name to borrow casing from, so
+    guessit preserves whatever the filename used ("example show" vs "Example
+    Show"). Linux is case-sensitive, so without this check that spelling
+    difference would create a second show/movie directory next to the real one.
+    """
+    try:
+        for child in root.iterdir():
+            if child.is_dir() and child.name.lower() == name.lower():
+                return child
+    except OSError:
+        pass
+    return None
+
+
 def _single_year(year):
     """guessit can return several year candidates as a list; keep the first."""
     if isinstance(year, (list, tuple)):
@@ -69,8 +86,9 @@ def build_tv_dest(f: Path, info: dict, root: Path = TV_ROOT):
     if not title or season is None or episode is None:
         return None
     year = _single_year(info.get("year"))
-    show_dir = f"{sanitize(title)} ({year})" if year else sanitize(title)
-    return root / show_dir / f"Season {season:02d}" / sanitize(f.name)
+    show_dir_name = f"{sanitize(title)} ({year})" if year else sanitize(title)
+    show_dir = existing_dir(root, show_dir_name) or (root / show_dir_name)
+    return show_dir / f"Season {season:02d}" / sanitize(f.name)
 
 
 def build_movie_dest(f: Path, info: dict, root: Path = MOVIES_ROOT):
@@ -79,7 +97,8 @@ def build_movie_dest(f: Path, info: dict, root: Path = MOVIES_ROOT):
         return None
     year = _single_year(info.get("year"))
     name = f"{sanitize(title)} ({year})" if year else sanitize(title)
-    return root / name / sanitize(f.name)
+    movie_dir = existing_dir(root, name) or (root / name)
+    return movie_dir / sanitize(f.name)
 
 
 def quality_suffix(info: dict) -> str:

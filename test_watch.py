@@ -32,6 +32,23 @@ class TestProcessEntry:
             movies_root / "Example Movie (2019)" / "Example Movie 2019 1080p BluRay HEVC x265 5.1 GRP.mkv"
         ]
 
+    def test_lowercase_single_file_lands_in_existing_cased_show_dir(self, tmp_path):
+        """Regression: a single-file release (no folder to borrow casing from)
+        that parses to a lowercase title must reuse the existing show directory
+        instead of creating a second, case-different one."""
+        tv_root = tmp_path / "tv"
+        (tv_root / "Example Show" / "Season 15").mkdir(parents=True)
+        entry = tmp_path / "downloads" / "example.show.s15e08.1080p.web.h264-grp.mkv"
+        entry.parent.mkdir(parents=True)
+        entry.write_bytes(b"0" * 10)
+
+        process_entry(entry, tv_root=tv_root, min_size_mb=0)
+
+        assert sorted(p.name for p in tv_root.iterdir()) == ["Example Show"]
+        assert list((tv_root / "Example Show" / "Season 15").iterdir()) == [
+            tv_root / "Example Show" / "Season 15" / entry.name
+        ]
+
     def test_nonexistent_path_is_a_noop(self, tmp_path):
         process_entry(tmp_path / "does-not-exist")
 
